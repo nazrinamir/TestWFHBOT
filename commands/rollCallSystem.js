@@ -1,8 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { userTasks } = require('./taskAssignment');
 
 const rollCallCommand = new SlashCommandBuilder()
   .setName("rollcall")
-  .setDescription("Shows list of users in the current voice channel");
+  .setDescription("Shows list of users and their tasks in the current voice channel");
 
 async function handleRollCall(interaction) {
   // Check if user is in a voice channel
@@ -15,15 +16,32 @@ async function handleRollCall(interaction) {
 
   const voiceChannel = interaction.member.voice.channel;
   const members = voiceChannel.members;
-  const currentTime = new Date().toLocaleTimeString(); // Get current time
+  const currentTime = new Date().toLocaleTimeString();
   
-  let userList = `**Users in ${voiceChannel.name}** (Roll call at ${currentTime}):\n`;
+  let userList = `**Users in ${voiceChannel.name}** (Roll call at ${currentTime}):\n\n`;
   let count = 1;
 
   members.forEach(member => {
     const status = member.voice.deaf ? '🔇' : 
                   member.voice.mute ? '🔈' : '🔊';
-    userList += `${count}. ${status} ${member.user.username}\n`;
+    
+    // Get user's tasks
+    const userTaskList = userTasks.get(member.user.id) || [];
+    const taskCount = userTaskList.length;
+    
+    userList += `${count}. ${status} **${member.user.username}** (${taskCount} tasks)\n`;
+    
+    // Add tasks if they exist
+    if (taskCount > 0) {
+      userTaskList.forEach((task, index) => {
+        const taskTime = new Date(task.timestamp).toLocaleTimeString();
+        userList += `   └─ ${index + 1}. [${taskTime}] ${task.description}\n`;
+      });
+      userList += '\n';
+    } else {
+      userList += '   └─ No tasks assigned\n\n';
+    }
+    
     count++;
   });
   
