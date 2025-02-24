@@ -1,41 +1,63 @@
-require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
-const { handleAfkCommand, handleBackCommand, handleAfkSelection } = require('./commands/afkSystem');
+require("dotenv").config();
+const {
+  Client,
+  Events,
+  GatewayIntentBits,
+  SlashCommandBuilder
+} = require("discord.js");
+const { afkCommand, backCommand, handleAfk, handleBack } = require("./commands/afkSystem");
+const { rollCallCommand, handleRollCall } = require("./commands/rollCallSystem");
+const { taskCommand, handleTask } = require("./commands/taskAssignment");
 
-const client = new Client({
+const client = new Client({ 
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences
-  ]
+    GatewayIntentBits.GuildVoiceStates
+  ] 
 });
 
-client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
+client.once(Events.ClientReady, c => {
+  console.log(`Logged in as ${c.user.tag}`);
+
+  const ping = new SlashCommandBuilder()
+    .setName("ping")
+    .setDescription('Replies with "Pong!"');
+
+  const hello = new SlashCommandBuilder()
+    .setName("hello")
+    .setDescription('Replies with "Hello!"');
+
+  client.application.commands.create(ping, process.env.SERVER_ID);
+  client.application.commands.create(afkCommand, process.env.SERVER_ID);
+  client.application.commands.create(backCommand, process.env.SERVER_ID);
+  client.application.commands.create(hello, process.env.SERVER_ID);
+  client.application.commands.create(rollCallCommand, process.env.SERVER_ID);
+  client.application.commands.create(taskCommand, process.env.SERVER_ID);
 });
 
-client.on('messageCreate', async message => {
-  if (message.author.bot) return;
+client.on(Events.InteractionCreate, async interaction => {
+  if (!interaction.isChatInputCommand()) return;
 
-  if (message.content.toLowerCase() === '!afk') {
-    await handleAfkCommand(message);
+  const { commandName } = interaction;
+
+  if (commandName === "ping") {
+    await interaction.reply("Pong!");
   }
-  else if (message.content.toLowerCase() === '!back') {
-    await handleBackCommand(message);
+  if (commandName === "afk") {
+    await handleAfk(interaction);
   }
-  else if (message.content === '!ping') {
-    await message.reply('Pong!');
+  if (commandName === "back") {
+    await handleBack(interaction);
+  }
+  if (commandName === "hello") {
+    await interaction.reply(`Hello! ${interaction.user.tag}`);
+  }
+  if (commandName === "rollcall") {
+    await handleRollCall(interaction);
+  }
+  if (commandName === "task") {
+    await handleTask(interaction);
   }
 });
 
-client.on('interactionCreate', async interaction => {
-  if (!interaction.isStringSelectMenu()) return;
-
-  if (interaction.customId === 'afk_duration') {
-    await handleAfkSelection(interaction);
-  }
-});
-
-client.login(process.env.DISCORD_TOKEN); 
+client.login(process.env.DISCORD_TOKEN);
