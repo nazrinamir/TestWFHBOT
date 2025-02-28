@@ -9,6 +9,7 @@ const { afkCommand, backCommand, handleAfk, handleBack } = require("./commands/a
 const { rollCallCommand, handleRollCall } = require("./commands/rollCallSystem");
 const { taskCommand, handleTask } = require("./commands/taskAssignment");
 const clockOutReminder = require('./commands/clockOutReminderSystem.js');
+const { data: meetingCommand, execute: handleMeeting } = require('./commands/noticeMeetingSystem.js');
 
 const client = new Client({ 
   intents: [
@@ -34,6 +35,7 @@ client.once(Events.ClientReady, c => {
   client.application.commands.create(hello, process.env.SERVER_ID);
   client.application.commands.create(rollCallCommand, process.env.SERVER_ID);
   client.application.commands.create(taskCommand, process.env.SERVER_ID);
+  client.application.commands.create(meetingCommand, process.env.SERVER_ID);
 
   clockOutReminder(client);
   console.log('Clock out reminder system started!');
@@ -61,6 +63,9 @@ client.on(Events.InteractionCreate, async interaction => {
   }
   if (commandName === "task") {
     await handleTask(interaction);
+  }
+  if (commandName === "schedulemeeting") {
+    await handleMeeting(interaction);
   }
 });
 
